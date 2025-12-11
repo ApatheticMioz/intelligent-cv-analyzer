@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.pyo
+*.pyd
+.python-version
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+temp/
+*.json
+!requirements.txt
+DataSet/
+dist/
+build/
+*.db
+*.sqlite3
+*.sqlite
+*.log
+*.pid
+*.pids
+*.bak
+*.orig
+node_modules/
+*.zip
+*.tar
+*.gz
+*.7z
+
+# Frontend build artifacts
+*.map
+*.cache

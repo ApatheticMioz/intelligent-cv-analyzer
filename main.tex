@@ -1,0 +1,305 @@
+\documentclass[11pt,a4paper]{article}
+
+% Essential packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=0.75in, top=0.9in, bottom=0.9in]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{parskip}
+
+% Fix header height warning
+\setlength{\headheight}{15pt}
+
+% Reduce spacing
+\titlespacing{\section}{0pt}{8pt plus 2pt minus 2pt}{4pt plus 2pt minus 2pt}
+\titlespacing{\subsection}{0pt}{6pt plus 2pt minus 2pt}{3pt plus 2pt minus 2pt}
+\titlespacing{\subsubsection}{0pt}{4pt plus 2pt minus 2pt}{2pt plus 2pt minus 2pt}
+\setlength{\parskip}{4pt}
+\setlength{\abovecaptionskip}{5pt}
+\setlength{\belowcaptionskip}{3pt}
+
+% Page styling
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CV Analyzer}
+\fancyhead[R]{\small Algorithm Analysis}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=cyan,
+    citecolor=blue,
+}
+
+% Compact lists
+\usepackage{enumitem}
+\setlist{noitemsep, topsep=3pt, partopsep=0pt, parsep=2pt, leftmargin=*}
+
+% Title configuration
+\title{\vspace{-1.5cm}\textbf{Intelligent CV Analyzer using String Matching Algorithms}\\\large Design and Implementation for Automated Skill Extraction and Job Fit Evaluation}
+\author{
+    \textbf{Name:} Muhammad Abdullah Ali \\
+    \textbf{Roll Number:} 23i-2523 \\
+    \textbf{Section:} 5A \\
+    \textbf{Department:} Data Science \\
+    \textbf{Course:} Design and Analysis of Algorithms \\
+    \textbf{Assignment:} 2 \\
+    \textbf{Date Submitted:} November 2, 2025
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+
+\begin{abstract}
+\small
+This project implements an intelligent CV Analyzer using Brute Force, Rabin-Karp, and KMP algorithms for automated skill matching. Through posteriori analysis of 218 unique CVs across 3 job descriptions (repeated 50 times, 32,700 total executions) on AMD Ryzen 7 7700 hardware, we evaluated real-world performance. Results show Brute Force achieves fastest execution (1.59ms mean), while Rabin-Karp demonstrates superior efficiency (98.9\% fewer comparisons). The system validates practical applicability for recruitment screening workflows.
+\end{abstract}
+
+\section{Introduction}
+
+Recruiters process hundreds of CVs daily, making manual review time-consuming and inconsistent. This project develops an intelligent CV Analyzer using string matching algorithms (Brute Force, Rabin-Karp, KMP) to automatically match skills against job requirements.
+
+\textbf{Objectives:} (1) Implement three string-matching algorithms, (2) automatically extract and match skills, (3) analyze efficiency through posteriori analysis of 218 unique CVs, (4) recommend the most effective algorithm.
+
+\textbf{Research Questions:} Which algorithm performs best for CV datasets? What are the trade-offs between speed and efficiency? Does theoretical complexity align with practical performance?
+
+\section{System Design and Algorithms}
+
+\subsection{System Architecture}
+The CV Analyzer processes files through five stages (Figure~\ref{fig:flowchart}): (1) Dataset Loading: reads 738 files (PDF: 375, DOCX: 360, DOC: 1, Others: 2), (2) File Validation: validates filename format (2 digits + lowercase letter + 4 digits), rejecting 135 files, (3) Duplicate Detection: filters 603 valid files to 218 unique CVs using submission numbers, (4) Text Extraction: uses PyPDF2 and python-docx, (5) String Matching: applies all three algorithms sequentially.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{images/system_flowchart.png}
+    \caption{CV Analyzer system architecture showing complete processing pipeline. Algorithm boxes show \textit{average} comparisons per single CV analysis (e.g., Brute Force: 22,980 avg; Rabin-Karp: 251 avg; KMP: 22,129 avg).}
+    \label{fig:flowchart}
+\end{figure}
+
+\subsection{Algorithm Implementations}
+
+\subsubsection{Brute Force Algorithm}
+Direct character-by-character comparison. \textbf{Complexity:} Time $O(nm)$, Space $O(1)$, No preprocessing.
+
+\begin{algorithm}[H]
+\caption{Brute Force String Matching}\label{alg:bf}
+\small
+\begin{algorithmic}[1]
+\Procedure{BruteForce}{$text, pattern$}
+    \State $n \gets \text{length}(text)$, $m \gets \text{length}(pattern)$
+    \For{$i \gets 0$ \textbf{to} $n-m$}
+        \State $j \gets 0$
+        \While{$j < m$ \textbf{and} $text[i+j] = pattern[j]$}
+            \State $j \gets j + 1$
+        \EndWhile
+        \If{$j = m$}
+            \State \Return \textsc{True}
+        \EndIf
+    \EndFor
+    \State \Return \textsc{False}
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Rabin-Karp Algorithm}
+Uses rolling hash for efficient comparison. \textbf{Complexity:} Time $O(n+m)$ average, $O(nm)$ worst case, Space $O(1)$, Preprocessing $O(m)$.
+
+\begin{algorithm}[H]
+\caption{Rabin-Karp String Matching}\label{alg:rk}
+\small
+\begin{algorithmic}[1]
+\Procedure{RabinKarp}{$text, pattern$}
+    \State Compute $pattern\_hash$ using polynomial rolling hash
+    \State Compute initial $text\_hash$ for first $m$ characters
+    \For{$i \gets 0$ \textbf{to} $n-m$}
+        \If{$pattern\_hash = text\_hash$}
+            \If{character-by-character verification matches}
+                \State \Return \textsc{True}
+            \EndIf
+        \EndIf
+        \State Update $text\_hash$ using rolling hash formula
+    \EndFor
+    \State \Return \textsc{False}
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Knuth-Morris-Pratt (KMP) Algorithm}
+Preprocesses pattern to compute LPS array for intelligent shifts. \textbf{Complexity:} Time $O(n+m)$ guaranteed, Space $O(m)$, Preprocessing $O(m)$.
+
+\begin{algorithm}[H]
+\caption{KMP String Matching}\label{alg:kmp}
+\small
+\begin{algorithmic}[1]
+\Procedure{KMP}{$text, pattern$}
+    \State $lps \gets \textsc{ComputeLPS}(pattern)$
+    \State $i \gets 0$, $j \gets 0$
+    \While{$i < n$}
+        \If{$pattern[j] = text[i]$}
+            \State $i \gets i + 1$, $j \gets j + 1$
+        \EndIf
+        \If{$j = m$}
+            \State \Return \textsc{True}
+        \ElsIf{$i < n$ \textbf{and} $pattern[j] \neq text[i]$}
+            \If{$j \neq 0$}
+                \State $j \gets lps[j-1]$
+            \Else
+                \State $i \gets i+1$
+            \EndIf
+        \EndIf
+    \EndWhile
+    \State \Return \textsc{False}
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\section{Implementation}
+
+\textbf{Technology Stack:} FastAPI (Python 3.13), HTML5/CSS3/JavaScript frontend, PyPDF2 (PDF extraction), python-docx (DOCX parsing), Windows 11 Pro.
+
+\textbf{Hardware (Posteriori Analysis Platform):} AMD Ryzen 7 7700 (8-Core, 3.8-5.35 GHz, 32MB L3 cache), 32GB DDR5-6000, Lexar NM620 2TB NVMe SSD.
+
+\textbf{Job Profiles:} (1) AI/ML Engineer: 15 keywords (Python, ML, Deep Learning, TensorFlow, PyTorch, etc.), (2) Data Scientist: 16 keywords (Python, R, SQL, Pandas, Statistics, etc.), (3) Full-Stack Developer: 16 keywords (HTML, CSS, JavaScript, React, Node.js, etc.).
+
+\textbf{Key Features:} Automatic dataset processing with duplicate resolution, batch processing for 218 CVs, sequential algorithm execution, interactive web dashboard, comprehensive performance tracking.
+
+\section{Experimental Results}
+
+\subsection{Dataset Analysis}
+Dataset comprised 738 files (Figure~\ref{fig:dataset}). Validation rejected 135 files (89 invalid filenames, 44 uppercase letters, 2 wrong extensions), yielding 603 valid files (81.7\%). Duplicate filtering using submission numbers reduced to 218 unique CVs across 3 jobs (654 analyses).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{images/dataset_composition.png}
+    \caption{Dataset composition by file format: PDF (50.8\%), DOCX (48.8\%), Others (0.4\%)}
+    \label{fig:dataset}
+\end{figure}
+
+\subsection{Algorithm Performance}
+
+Complete analysis (218 CVs $\times$ 3 jobs = 654 analyses) repeated 50 times yielded 32,700 executions. Outliers removed using IQR method. Table~\ref{tab:performance} shows aggregated results across all 50 iterations.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Overall Algorithm Performance Across 50 Iterations (32,700 Total Analyses)}
+\label{tab:performance}
+\begin{tabular}{@{}lcccl@{}}
+\toprule
+\textbf{Algorithm} & \textbf{Mean (ms)} & \textbf{Median (ms)} & \textbf{Total Comparisons} & \textbf{Rank} \\ 
+\midrule
+Brute Force & 1.59 & 1.56 & 724,923,000 & Fastest \\
+Rabin-Karp & 2.67 & 2.61 & 7,965,500 & Most Efficient \\
+KMP & 2.13 & 2.09 & 701,355,650 & Moderate \\ 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key Findings:} Brute Force fastest (1.59ms mean), 40.5\% faster than Rabin-Karp, 25.2\% faster than KMP. Rabin-Karp demonstrated 98.9\% comparison reduction (7.97M vs 725M total). KMP 3.3\% fewer comparisons than Brute Force but 33.8\% slower due to LPS overhead. All algorithms produced identical results (100\% agreement). Note: Total comparisons shown are cumulative across all 50 iterations; per-iteration averages are: BF 22,980, RK 251, KMP 22,129 comparisons per analysis.
+
+\subsection{Performance by Job \& Score Distribution}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Performance by Job Description (n = 218 CVs each)}
+\label{tab:jobs}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Job} & \textbf{CVs} & \textbf{Avg} & \textbf{Top} & \textbf{Fastest (ms)} \\ 
+\midrule
+AI/ML Engineer & 218 & 28.5\% & 86.7\% & BF (1.54) \\
+Data Scientist & 218 & 33.5\% & 81.2\% & BF (1.55) \\
+Full-Stack Dev & 218 & 30.9\% & 81.2\% & BF (1.68) \\ 
+\bottomrule
+\end{tabular}
+\end{table}
+
+Score distribution (Figure~\ref{fig:scores}): 26.6\% scored 0-19\%, 44.5\% scored 20-39\%, 24.2\% scored 40-59\%, 4.3\% scored 60-79\%, 0.5\% scored 80-89\%. No 90-100\% matches indicate realistic job requirements.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{images/score_distribution.png}
+    \caption{Candidate score distribution across three job descriptions showing realistic skill alignment}
+    \label{fig:scores}
+\end{figure}
+
+\subsection{Performance Comparison \& Analysis}
+
+Figure~\ref{fig:performance} shows execution time vs comparison efficiency divergence. Despite $O(nm)$ complexity, Brute Force outperformed due to: (1) Short patterns (3-15 chars) minimize $O(nm)$ impact, (2) Python overhead for hash/LPS operations exceeds simple comparisons, (3) Constant factors dominate for small inputs typical in CV analysis.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{images/performance_comparison.png}
+    \caption{Algorithm performance comparison across 50 iterations: (Left) Mean execution time with outliers removed; (Right) Total comparisons on log scale showing Rabin-Karp's 98.9\% efficiency advantage.}
+    \label{fig:performance}
+\end{figure}
+
+\section{Comparative Analysis}
+
+Table~\ref{tab:complexity} summarizes theoretical complexity and use cases. Figure~\ref{fig:tradeoffs} visualizes trade-offs across speed, memory, implementation complexity, and scalability.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Algorithm Complexity and Use Cases}
+\label{tab:complexity}
+\begin{tabular}{@{}lcccl@{}}
+\toprule
+\textbf{Algorithm} & \textbf{Time} & \textbf{Space} & \textbf{Prep} & \textbf{Best Use} \\ 
+\midrule
+Brute Force & $O(nm)$ & $O(1)$ & None & Short patterns \\
+Rabin-Karp & $O(n+m)$ & $O(1)$ & $O(m)$ & Multiple patterns \\
+KMP & $O(n+m)$ & $O(m)$ & $O(m)$ & Guaranteed perf \\ 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\textwidth]{images/algorithm_tradeoffs.png}
+    \caption{Algorithm trade-offs: speed, memory, complexity, scalability}
+    \label{fig:tradeoffs}
+\end{figure}
+
+\textbf{Trade-offs:} Brute Force fastest (1.59ms), Rabin-Karp most efficient (98.9\% fewer comparisons), KMP guaranteed $O(n+m)$. Brute Force and Rabin-Karp use $O(1)$ space; KMP requires $O(m)$ for LPS array. Implementation: Brute Force simplest (~15 lines), Rabin-Karp moderate (~40 lines), KMP most complex (~60 lines).
+
+\section{Conclusions and Recommendations}
+
+Based on 32,700 analyses (218 CVs $\times$ 3 jobs $\times$ 50 iterations) on AMD Ryzen 7 7700:
+
+\textbf{Brute Force (Speed Champion):} 1.59ms mean, 40.5\% faster than RK, 25.2\% faster than KMP, $O(1)$ space. \textit{Recommended for production CV screening and real-time applications.}
+
+\textbf{Rabin-Karp (Efficiency Champion):} 2.67ms mean, 98.9\% fewer comparisons, $O(1)$ space. \textit{Recommended for batch processing and CPU-constrained environments.}
+
+\textbf{KMP (Reliability Champion):} 2.13ms mean, guaranteed $O(n+m)$, 3.3\% fewer comparisons than BF. \textit{Recommended for SLA-critical systems requiring worst-case guarantees.}
+
+\textbf{Business Impact:} Processing time reduced by 99.9\% (2-3 min/CV to 1.59ms), throughput increased 1,250$\times$ (20-30 CVs/hour to 37,735), 100\% consistency.
+
+\textbf{Validation:} All algorithms produced identical results (100\% agreement over 50 iterations), 218 unique CVs from 738 files with intelligent duplicate filtering, production-ready web interface.
+
+\textbf{Future Work:} Hybrid algorithm selection, semantic skill matching, fuzzy matching, weighted scoring, parallel processing, database integration.
+
+\begin{thebibliography}{9}
+\small
+\bibitem{charras2004}
+Charras, C., \& Lecroq, T. (2004). \textit{Handbook of Exact String Matching Algorithms}. King's College Publications. Available online: \url{http://www-igm.univ-mlv.fr/~lecroq/string/index.html}
+\end{thebibliography}
+
+\end{document}

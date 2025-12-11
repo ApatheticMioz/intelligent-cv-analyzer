@@ -1,0 +1,4 @@
+Job Title: Full-Stack Web Developer
+
+Required Skills and Technologies:
+html, css, javascript, react, node.js, python, django, flask, fastapi, mongodb, mysql, postgresql, rest apis, git, docker, figma

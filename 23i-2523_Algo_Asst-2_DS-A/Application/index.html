@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent CV Analyzer - String Matching Algorithms</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* custom scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        
+        /* basic animations */
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .spinner { border: 2px solid #f3f3f3; border-top: 2px solid #3b82f6; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        
+        /* modal transitions */
+        .modal-backdrop { transition: opacity 0.3s ease; }
+        .modal-content { transition: all 0.3s ease; }
+        
+        /* progress bar animation */
+        .progress-bar { transition: width 0.3s ease; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans antialiased">
+
+    <header class="bg-gradient-to-r from-blue-800 to-purple-800 shadow-lg">
+        <div class="container mx-auto max-w-7xl p-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-4xl font-bold text-white mb-2">
+                        <i class="fas fa-brain mr-3"></i>Intelligent CV Analyzer
+                    </h1>
+                    <p class="text-blue-100">String Matching Algorithms: Brute Force, Rabin-Karp & KMP</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-blue-200 font-semibold">Assignment 2</p>
+                    <p class="text-blue-100 text-sm">Algorithm Analysis & Comparison</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- stats dashboard -->
+    <div class="bg-gray-800 border-b border-gray-700">
+        <div class="container mx-auto max-w-7xl p-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-400" id="stats-cvs">0</div>
+                    <div class="text-sm text-gray-300">CVs Loaded</div>
+                </div>
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <div class="text-2xl font-bold text-green-400" id="stats-analyzed">0</div>
+                    <div class="text-sm text-gray-300">Analyzed</div>
+                </div>
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <div class="text-2xl font-bold text-yellow-400" id="stats-avg-score">0%</div>
+                    <div class="text-sm text-gray-300">Avg Score</div>
+                </div>
+                <div class="bg-gray-700 p-3 rounded-lg">
+                    <div class="text-2xl font-bold text-purple-400" id="stats-fastest">-</div>
+                    <div class="text-sm text-gray-300">Fastest Algorithm</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto max-w-7xl p-4 grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+        <!-- sidebar with controls -->
+        <aside class="lg:col-span-1 flex flex-col gap-6">
+            
+            <!-- file upload section -->
+            <div class="bg-gray-800 p-5 rounded-lg shadow-lg fade-in">
+                <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
+                    <i class="fas fa-file-upload mr-2 text-blue-400"></i>File Management
+                </h2>
+                
+                <!-- load dataset button -->
+                <button id="load-dataset-btn" class="w-full mb-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                    <i class="fas fa-database mr-2"></i>
+                    <span id="load-dataset-text">Load DataSet</span>
+                    <div id="load-dataset-spinner" class="spinner ml-2 hidden"></div>
+                </button>
+                <p class="text-xs text-gray-400 mb-3 px-2">Loads dataset automatically</p>
+                
+                <!-- manual file upload -->
+                <div class="mb-4">
+                    <input type="file" id="cv-upload-input" multiple accept=".pdf,.docx,.doc" class="hidden">
+                    <button id="cv-upload-btn" class="w-full mb-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                        <i class="fas fa-upload mr-2"></i>Upload CVs
+                    </button>
+                    <p class="text-xs text-gray-400 px-2">Load your own data</p>
+                </div>
+                
+                <div id="upload-status" class="text-sm text-gray-400 mb-2"></div>
+            </div>
+
+            <!-- job description picker -->
+            <div class="bg-gray-800 p-5 rounded-lg shadow-lg fade-in">
+                <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
+                    <i class="fas fa-briefcase mr-2 text-green-400"></i>Job Description
+                </h2>
+                
+                <select id="jd-select" class="w-full mb-3 bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
+                    <option value="">Select Job Description</option>
+                </select>
+                
+                <div id="jd-keywords-preview" class="bg-gray-700 p-3 rounded-lg min-h-[100px] max-h-[150px] overflow-y-auto hidden">
+                    <div class="text-sm text-gray-300 mb-2">Keywords:</div>
+                    <div id="jd-keywords-list" class="flex flex-wrap gap-1"></div>
+                </div>
+            </div>
+
+            <!-- cv list display -->
+            <div class="bg-gray-800 p-5 rounded-lg shadow-lg flex-grow flex flex-col fade-in">
+                <h2 class="text-xl font-semibold mb-4 text-white flex items-center justify-between">
+                    <span><i class="fas fa-file-alt mr-2 text-yellow-400"></i>CVs</span>
+                    <span id="cv-count" class="text-sm text-gray-400">0 loaded</span>
+                </h2>
+                
+                <div class="flex gap-2 mb-3">
+                    <button id="cv-select-all" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-1 px-2 rounded text-sm transition duration-200">
+                        <i class="fas fa-check-square mr-1"></i>All
+                    </button>
+                    <button id="cv-clear-all" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-1 px-2 rounded text-sm transition duration-200">
+                        <i class="fas fa-square mr-1"></i>None
+                    </button>
+                </div>
+                
+                <div id="cv-list" class="flex-grow bg-gray-900 border border-gray-700 rounded-lg p-3 overflow-y-auto min-h-[200px] max-h-[400px]">
+                    <div class="text-gray-500 text-center py-8">
+                        <i class="fas fa-folder-open text-4xl mb-3 opacity-50"></i>
+                        <p>No CVs loaded yet</p>
+                        <p class="text-xs mt-2">Click "Load DataSet" to get started</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- main content -->
+        <main class="lg:col-span-3 flex flex-col gap-6">
+            
+            <!-- analyze buttons -->
+            <div class="bg-gray-800 p-5 rounded-lg shadow-lg fade-in">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <button id="analyze-selected-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-play mr-2"></i>
+                        <span id="analyze-selected-text">Analyze Selected</span>
+                        <div id="analyze-selected-spinner" class="spinner ml-2 hidden"></div>
+                    </button>
+                    <button id="analyze-all-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-rocket mr-2"></i>
+                        <span id="analyze-all-text">Analyze All CVs</span>
+                        <div id="analyze-all-spinner" class="spinner ml-2 hidden"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- error messages -->
+            <div id="error-container" class="bg-red-800 border border-red-600 text-red-100 p-4 rounded-lg shadow-lg hidden fade-in">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-3 text-2xl"></i>
+                    <div>
+                        <h3 class="font-bold text-lg">Error</h3>
+                        <p id="error-message"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- analytics dashboard -->
+            <div id="analytics-container" class="bg-gray-800 p-5 rounded-lg shadow-lg fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-white flex items-center">
+                        <i class="fas fa-chart-line mr-3 text-blue-400"></i>Dataset Algorithm Performance Analysis
+                    </h2>
+                    <button id="hide-analytics-btn" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- algorithm performance stats -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <div id="bf-analytics" class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold text-red-400 mb-3 flex items-center">
+                            <i class="fas fa-search mr-2"></i>Brute Force
+                        </h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Time:</span>
+                                <span class="text-white font-mono" id="bf-total-time">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Avg Time:</span>
+                                <span class="text-white font-mono" id="bf-avg-time">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Comparisons:</span>
+                                <span class="text-white font-mono" id="bf-total-comparisons">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Avg Comparisons:</span>
+                                <span class="text-white font-mono" id="bf-avg-comparisons">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="rk-analytics" class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold text-green-400 mb-3 flex items-center">
+                            <i class="fas fa-hashtag mr-2"></i>Rabin-Karp
+                        </h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Time:</span>
+                                <span class="text-white font-mono" id="rk-total-time">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Avg Time:</span>
+                                <span class="text-white font-mono" id="rk-avg-time">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Comparisons:</span>
+                                <span class="text-white font-mono" id="rk-total-comparisons">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Avg Comparisons:</span>
+                                <span class="text-white font-mono" id="rk-avg-comparisons">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="kmp-analytics" class="bg-gray-700 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold text-blue-400 mb-3 flex items-center">
+                            <i class="fas fa-bolt mr-2"></i>KMP
+                        </h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Time:</span>
+                                <span class="text-white font-mono" id="kmp-total-time">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Avg Time:</span>
+                                <span class="text-white font-mono" id="kmp-avg-time">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Comparisons:</span>
+                                <span class="text-white font-mono" id="kmp-total-comparisons">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Avg Comparisons:</span>
+                                <span class="text-white font-mono" id="kmp-avg-comparisons">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Comparison Chart -->
+                <div class="bg-gray-700 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-chart-bar mr-2 text-purple-400"></i>Algorithm Performance Comparison
+                    </h3>
+                    <div class="flex flex-wrap gap-6">
+                        <div class="flex-1 min-w-64">
+                            <canvas id="time-chart" class="w-full h-64"></canvas>
+                        </div>
+                        <div class="flex-1 min-w-64">
+                            <canvas id="comparisons-chart" class="w-full h-64"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Statistics -->
+                <div id="summary-stats" class="bg-gray-700 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-trophy mr-2 text-yellow-400"></i>Performance Summary
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Fastest Algorithm:</span>
+                                <span class="text-green-400 font-semibold" id="fastest-algo">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Most Efficient (fewest comparisons):</span>
+                                <span class="text-blue-400 font-semibold" id="most-efficient-algo">-</span>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total CVs Analyzed:</span>
+                                <span class="text-white font-mono" id="total-cvs-analyzed">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Processing Time:</span>
+                                <span class="text-white font-mono" id="total-processing-time">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Container -->
+            <div id="results-container" class="bg-gray-800 p-5 rounded-lg shadow-lg flex-grow hidden fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-white flex items-center">
+                        <i class="fas fa-trophy mr-3 text-yellow-400"></i>Ranked Results
+                    </h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-sm text-gray-400">
+                            <span id="results-count">0</span> CVs analyzed
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-gray-800 border border-gray-700 rounded-lg">
+                        <thead class="bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-r border-gray-600">
+                                    <span class="cursor-pointer hover:text-white flex items-center" onclick="sortTable('rank')">
+                                        Rank <i id="sort-rank" class="fas fa-sort ml-1 text-gray-500"></i>
+                                    </span>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-r border-gray-600">
+                                    <span class="cursor-pointer hover:text-white flex items-center" onclick="sortTable('studentId')">
+                                        Student ID <i id="sort-studentId" class="fas fa-sort ml-1 text-gray-500"></i>
+                                    </span>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-r border-gray-600">
+                                    <span class="cursor-pointer hover:text-white flex items-center" onclick="sortTable('score')">
+                                        Score <i id="sort-score" class="fas fa-sort ml-1 text-gray-500"></i>
+                                    </span>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-r border-gray-600">
+                                    <span class="cursor-pointer hover:text-white flex items-center" onclick="sortTable('matches')">
+                                        Matches <i id="sort-matches" class="fas fa-sort ml-1 text-gray-500"></i>
+                                    </span>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-r border-gray-600">
+                                    <span class="cursor-pointer hover:text-white flex items-center" onclick="sortTable('bfTime')">
+                                        BF Time <i id="sort-bfTime" class="fas fa-sort ml-1 text-gray-500"></i>
+                                    </span>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-r border-gray-600">
+                                    <span class="cursor-pointer hover:text-white flex items-center" onclick="sortTable('rkTime')">
+                                        RK Time <i id="sort-rkTime" class="fas fa-sort ml-1 text-gray-500"></i>
+                                    </span>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider border-r border-gray-600">
+                                    <span class="cursor-pointer hover:text-white flex items-center" onclick="sortTable('kmpTime')">
+                                        KMP Time <i id="sort-kmpTime" class="fas fa-sort ml-1 text-gray-500"></i>
+                                    </span>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body" class="bg-gray-800 divide-y divide-gray-700">
+                            <!-- Results will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Placeholder Container -->
+            <div id="placeholder-container" class="bg-gray-800 p-8 rounded-lg shadow-lg flex-grow flex flex-col items-center justify-center min-h-[500px] fade-in">
+                <i class="fas fa-chart-line text-6xl text-gray-600 mb-6"></i>
+                <h2 class="text-3xl font-semibold text-gray-400 mb-4">Ready for Analysis</h2>
+                <div class="text-center text-gray-500 space-y-2">
+                    <p><i class="fas fa-database mr-2"></i>1. Load CVs from DataSet or upload manually</p>
+                    <p><i class="fas fa-briefcase mr-2"></i>2. Select a job description</p>
+                    <p><i class="fas fa-play mr-2"></i>3. Click "Analyze All CVs" to compare algorithms</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal for Detailed Results -->
+    <div id="modal-backdrop" class="modal-backdrop fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 hidden opacity-0">
+        <div id="modal-content" class="modal-content bg-gray-800 rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col transform scale-95 opacity-0">
+            <div class="flex justify-between items-center p-5 border-b border-gray-700">
+                <h2 class="text-2xl font-semibold text-white flex items-center">
+                    <i class="fas fa-file-alt mr-3 text-blue-400"></i>Detailed Analysis Report
+                </h2>
+                <div class="flex items-center gap-3">
+                    <button id="view-cv-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center">
+                        <i class="fas fa-eye mr-2"></i>View CV
+                    </button>
+                    <button id="modal-close-btn" class="text-gray-400 hover:text-white text-3xl font-bold">&times;</button>
+                </div>
+            </div>
+            <div class="p-6 space-y-6 overflow-y-auto">
+                <!-- CV Info Header -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-sm text-gray-400">CV File</div>
+                        <div id="modal-cv-filename" class="text-lg font-bold text-white truncate">-</div>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-sm text-gray-400">Job Description</div>
+                        <div id="modal-jd-title" class="text-lg font-bold text-white truncate">-</div>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-sm text-gray-400">Match Score</div>
+                        <div id="modal-score" class="text-3xl font-bold text-green-400">-</div>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-sm text-gray-400">Fastest Algorithm</div>
+                        <div id="modal-fastest-algo" class="text-lg font-bold text-purple-400">-</div>
+                    </div>
+                </div>
+
+                <!-- Detailed Performance Table -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-3 text-white flex items-center">
+                        <i class="fas fa-stopwatch mr-2 text-blue-400"></i>Algorithm Performance Metrics
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-600 bg-gray-700 rounded-lg">
+                            <thead class="bg-gray-600">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Algorithm</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Execution Time (ms)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Comparisons</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">Matches Found</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-performance-table" class="bg-gray-700 divide-y divide-gray-600">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Keywords Analysis -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-green-900 bg-opacity-30 p-6 rounded-lg border border-green-700">
+                        <h3 class="text-xl font-semibold mb-4 text-green-400 flex items-center">
+                            <i class="fas fa-check-circle mr-2"></i>Matched Keywords (<span id="modal-matched-count">0</span>)
+                        </h3>
+                        <div id="modal-matched-list" class="max-h-48 overflow-y-auto">
+                            <!-- Matched keywords will be displayed here -->
+                        </div>
+                    </div>
+                    <div class="bg-red-900 bg-opacity-30 p-6 rounded-lg border border-red-700">
+                        <h3 class="text-xl font-semibold mb-4 text-red-400 flex items-center">
+                            <i class="fas fa-times-circle mr-2"></i>Missing Keywords (<span id="modal-missing-count">0</span>)
+                        </h3>
+                        <div id="modal-missing-list" class="max-h-48 overflow-y-auto">
+                            <!-- Missing keywords will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // config
+            const API_BASE_URL = 'http://127.0.0.1:8000';
+
+            // global variables
+            let jobDescriptions = [];
+            let uploadedCVs = [];
+            let analysisResults = [];
+            let currentJobDescription = null;
+
+            // dom elements
+            const loadDatasetBtn = document.getElementById('load-dataset-btn');
+            const loadDatasetText = document.getElementById('load-dataset-text');
+            const loadDatasetSpinner = document.getElementById('load-dataset-spinner');
+            
+            const uploadInput = document.getElementById('cv-upload-input');
+            const uploadBtn = document.getElementById('cv-upload-btn');
+            const uploadStatus = document.getElementById('upload-status');
+            
+            const jdSelect = document.getElementById('jd-select');
+            const jdKeywordsPreview = document.getElementById('jd-keywords-preview');
+            const jdKeywordsList = document.getElementById('jd-keywords-list');
+            
+            const cvCount = document.getElementById('cv-count');
+            const cvSelectAll = document.getElementById('cv-select-all');
+            const cvClearAll = document.getElementById('cv-clear-all');
+            const cvList = document.getElementById('cv-list');
+            
+            const analyzeSelectedBtn = document.getElementById('analyze-selected-btn');
+            const analyzeSelectedText = document.getElementById('analyze-selected-text');
+            const analyzeSelectedSpinner = document.getElementById('analyze-selected-spinner');
+            const analyzeAllBtn = document.getElementById('analyze-all-btn');
+            const analyzeAllText = document.getElementById('analyze-all-text');
+            const analyzeAllSpinner = document.getElementById('analyze-all-spinner');
+
+            const errorContainer = document.getElementById('error-container');
+            const errorMessage = document.getElementById('error-message');
+            const resultsContainer = document.getElementById('results-container');
+            const placeholderContainer = document.getElementById('placeholder-container');
+            const resultsTableBody = document.getElementById('results-table-body');
+            
+            // Modal Elements
+            const modalBackdrop = document.getElementById('modal-backdrop');
+            const modalContent = document.getElementById('modal-content');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+            const viewCvBtn = document.getElementById('view-cv-btn');
+            const modalCvFilename = document.getElementById('modal-cv-filename');
+            const modalJdTitle = document.getElementById('modal-jd-title');
+            const modalScore = document.getElementById('modal-score');
+            const modalPerformanceTable = document.getElementById('modal-performance-table');
+            const modalMatchedCount = document.getElementById('modal-matched-count');
+            const modalMatchedList = document.getElementById('modal-matched-list');
+            const modalMissingCount = document.getElementById('modal-missing-count');
+            const modalMissingList = document.getElementById('modal-missing-list');
+            
+            let currentModalFilename = null;
+
+            // utility functions
+            function showLoading(button, textEl, spinnerEl) {
+                button.disabled = true;
+                textEl.textContent = 'Processing...';
+                spinnerEl.classList.remove('hidden');
+                hideError();
+            }
+
+            function hideLoading(button, textEl, spinnerEl, defaultText) {
+                button.disabled = false;
+                textEl.textContent = defaultText;
+                spinnerEl.classList.add('hidden');
+            }
+
+            function showError(message) {
+                console.error('Error:', message);
+                errorMessage.textContent = message;
+                errorContainer.classList.remove('hidden');
+            }
+
+            function hideError() {
+                errorContainer.classList.add('hidden');
+            }
+
+            function updateAnalysisButtons() {
+                const jdSelected = jdSelect.value !== "";
+                const cvsLoaded = uploadedCVs.length > 0;
+                const cvsSelected = getSelectedCVs().length > 0;
+
+                analyzeAllBtn.disabled = !(jdSelected && cvsLoaded);
+                analyzeSelectedBtn.disabled = !(jdSelected && cvsSelected);
+            }
+
+            function extractStudentId(filename) {
+                const match = filename.match(/([0-9]{2}[a-z][0-9]{4})/i);
+                return match ? match[1] : null;
+            }
+
+            function updateStats() {
+                document.getElementById('stats-cvs').textContent = uploadedCVs.length;
+                document.getElementById('stats-analyzed').textContent = analysisResults.length;
+                
+                if (analysisResults.length > 0) {
+                    const avgScore = analysisResults.reduce((sum, r) => sum + r.score, 0) / analysisResults.length;
+                    document.getElementById('stats-avg-score').textContent = `${avgScore.toFixed(1)}%`;
+                    
+                    // Find fastest algorithm overall
+                    let fastestAlgo = 'N/A';
+                    let minTime = Infinity;
+                    
+                    analysisResults.forEach(result => {
+                        if (result.full_report?.performance) {
+                            result.full_report.performance.forEach(perf => {
+                                if (perf.execution_time_ms < minTime) {
+                                    minTime = perf.execution_time_ms;
+                                    fastestAlgo = perf.code || perf.algorithm;
+                                }
+                            });
+                        }
+                    });
+                    
+                    document.getElementById('stats-fastest').textContent = fastestAlgo;
+                }
+            }
+
+            // --- CV List Management ---
+            function renderCVList() {
+                if (uploadedCVs.length === 0) {
+                    cvList.innerHTML = `
+                        <div class="text-gray-500 text-center py-8">
+                            <i class="fas fa-folder-open text-4xl mb-3 opacity-50"></i>
+                            <p>No CVs loaded yet</p>
+                            <p class="text-xs mt-2">Click "Load DataSet" to get started</p>
+                        </div>
+                    `;
+                    cvCount.textContent = '0 loaded';
+                    return;
+                }
+
+                cvCount.textContent = `${uploadedCVs.length} loaded`;
+                cvList.innerHTML = uploadedCVs.map(filename => {
+                    const studentId = extractStudentId(filename) || 'Unknown';
+                    return `
+                        <div class="flex items-center p-2 rounded hover:bg-gray-700 transition-colors">
+                            <input type="checkbox" 
+                                   data-filename="${filename}" 
+                                   class="cv-checkbox h-4 w-4 bg-gray-600 border-gray-500 rounded text-blue-500 focus:ring-blue-500 mr-3">
+                            <div class="flex-grow">
+                                <div class="text-sm font-medium text-gray-200">${studentId}</div>
+                                <div class="text-xs text-gray-400 truncate" title="${filename}">${filename}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            function getSelectedCVs() {
+                return Array.from(document.querySelectorAll('.cv-checkbox:checked'))
+                            .map(cb => cb.dataset.filename);
+            }
+
+            // job description functions
+            async function fetchJDs() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/jds`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    jobDescriptions = await response.json();
+                    
+                    jdSelect.innerHTML = '<option value="">Select Job Description</option>' +
+                        jobDescriptions.map(jd => 
+                            `<option value="${jd.id}">${jd.title}</option>`
+                        ).join('');
+                        
+                } catch (error) {
+                    console.error('Failed to fetch job descriptions:', error);
+                    showError('Failed to load job descriptions: ' + error.message);
+                }
+            }
+
+            // event listeners
+            jdSelect.addEventListener('change', () => {
+                const selectedJd = jobDescriptions.find(jd => jd.id === jdSelect.value);
+                currentJobDescription = selectedJd;
+                
+                if (selectedJd) {
+                    jdKeywordsList.innerHTML = selectedJd.keywords.map(kw => 
+                        `<span class="inline-block bg-blue-600 text-white text-xs px-2 py-1 rounded mr-1 mb-1">${kw}</span>`
+                    ).join('');
+                    jdKeywordsPreview.classList.remove('hidden');
+                } else {
+                    jdKeywordsPreview.classList.add('hidden');
+                }
+                updateAnalysisButtons();
+            });
+
+            cvSelectAll.addEventListener('click', () => {
+                document.querySelectorAll('.cv-checkbox').forEach(cb => cb.checked = true);
+                updateAnalysisButtons();
+            });
+
+            cvClearAll.addEventListener('click', () => {
+                document.querySelectorAll('.cv-checkbox').forEach(cb => cb.checked = false);
+                updateAnalysisButtons();
+            });
+
+            cvList.addEventListener('change', (e) => {
+                if (e.target.classList.contains('cv-checkbox')) {
+                    updateAnalysisButtons();
+                }
+            });
+
+            // dataset loading
+            loadDatasetBtn.addEventListener('click', async () => {
+                showLoading(loadDatasetBtn, loadDatasetText, loadDatasetSpinner);
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/load_dataset`, {
+                        method: 'POST'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    uploadedCVs = data.processed_files || [];
+                    updateStats();
+                    renderCVList();
+                    updateAnalysisButtons();
+                    
+                    uploadStatus.innerHTML = `<div class="text-green-400">
+                        <i class="fas fa-check mr-1"></i>${data.message}
+                        ${data.skipped_duplicates > 0 ? `<br><small>${data.skipped_duplicates} duplicate submissions filtered</small>` : ''}
+                    </div>`;
+                    
+                } catch (error) {
+                    console.error('Dataset load error:', error);
+                    showError(`Failed to load dataset: ${error.message}`);
+                } finally {
+                    hideLoading(loadDatasetBtn, loadDatasetText, loadDatasetSpinner, 'Load DataSet');
+                }
+            });
+
+            // file upload handling
+            uploadBtn.addEventListener('click', () => {
+                uploadInput.click();
+            });
+
+            uploadInput.addEventListener('change', async (event) => {
+                const files = Array.from(event.target.files);
+                if (files.length === 0) return;
+
+                const formData = new FormData();
+                files.forEach(file => formData.append('files', file));
+
+                try {
+                    uploadStatus.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Uploading and processing files...';
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/upload_cvs`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    uploadedCVs = [...uploadedCVs, ...data.processed_files];
+                    updateStats();
+                    renderCVList();
+                    updateAnalysisButtons();
+                    
+                    uploadStatus.innerHTML = `<div class="text-green-400">
+                        <i class="fas fa-check mr-1"></i>${data.message}
+                    </div>`;
+
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    showError(`Upload failed: ${error.message}`);
+                } finally {
+                    event.target.value = ''; // clear file input
+                }
+            });
+
+            // analysis functions
+            analyzeAllBtn.addEventListener('click', () => handleAnalysis('all'));
+            analyzeSelectedBtn.addEventListener('click', () => handleAnalysis('selected'));
+            
+            async function handleAnalysis(mode) {
+                const isAll = mode === 'all';
+                const button = isAll ? analyzeAllBtn : analyzeSelectedBtn;
+                const textEl = isAll ? analyzeAllText : analyzeSelectedText;
+                const spinnerEl = isAll ? analyzeAllSpinner : analyzeSelectedSpinner;
+                const defaultText = isAll ? 'Analyze All CVs' : 'Analyze Selected';
+                
+                if (!currentJobDescription) {
+                    showError('Please select a job description first.');
+                    return;
+                }
+                
+                const cvsToAnalyze = isAll ? uploadedCVs : getSelectedCVs();
+                if (cvsToAnalyze.length === 0) {
+                    showError(`No CVs ${isAll ? 'loaded' : 'selected'} for analysis.`);
+                    return;
+                }
+                
+                showLoading(button, textEl, spinnerEl);
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/analyze_batch`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            jd_id: currentJobDescription.id,
+                            cv_filenames: cvsToAnalyze
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const responseData = await response.json();
+                    console.log('got response:', responseData);
+                    
+                    // handle api response
+                    if (responseData.results) {
+                        // new format with analytics
+                        analysisResults = responseData.results;
+                        window.currentAnalytics = responseData.dataset_analytics;
+                        console.log('analytics:', window.currentAnalytics);
+                    } else {
+                        // fallback for old format
+                        analysisResults = responseData;
+                        window.currentAnalytics = null;
+                    }
+                    
+                    renderResults(analysisResults, window.currentAnalytics);
+                    updateStats();
+                    updateAnalyticsButton(); // Update button state
+                    
+                } catch (error) {
+                    console.error('Analysis error:', error);
+                    showError(`Analysis failed: ${error.message}`);
+                } finally {
+                    hideLoading(button, textEl, spinnerEl, defaultText);
+                }
+            }
+
+            // --- Table Sorting Functionality ---
+            let currentSortColumn = null;
+            let currentSortDirection = 'desc'; // Default to descending for most columns
+            let currentResults = []; // Store current results for sorting
+
+            window.sortTable = function(column) {
+                if (!currentResults.length) return;
+                
+                // Toggle sort direction if same column clicked
+                if (currentSortColumn === column) {
+                    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortColumn = column;
+                    currentSortDirection = column === 'studentId' ? 'asc' : 'desc'; // Student ID ascending by default
+                }
+                
+                // Update sort icons
+                updateSortIcons(column, currentSortDirection);
+                
+                // Sort the results
+                const sortedResults = [...currentResults].sort((a, b) => {
+                    let aVal, bVal;
+                    
+                    switch(column) {
+                        case 'rank':
+                            aVal = currentResults.indexOf(a) + 1;
+                            bVal = currentResults.indexOf(b) + 1;
+                            break;
+                        case 'studentId':
+                            aVal = extractStudentId(a.cv_filename) || '';
+                            bVal = extractStudentId(b.cv_filename) || '';
+                            return currentSortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                        case 'score':
+                            aVal = a.score;
+                            bVal = b.score;
+                            break;
+                        case 'matches':
+                            aVal = a.matched_count || 0;
+                            bVal = b.matched_count || 0;
+                            break;
+                        case 'bfTime':
+                            aVal = a.full_report?.performance?.find(p => p.code === 'BF' || p.algorithm === 'Brute Force')?.execution_time_ms || 0;
+                            bVal = b.full_report?.performance?.find(p => p.code === 'BF' || p.algorithm === 'Brute Force')?.execution_time_ms || 0;
+                            break;
+                        case 'rkTime':
+                            aVal = a.full_report?.performance?.find(p => p.code === 'RK' || p.algorithm === 'Rabin-Karp')?.execution_time_ms || 0;
+                            bVal = b.full_report?.performance?.find(p => p.code === 'RK' || p.algorithm === 'Rabin-Karp')?.execution_time_ms || 0;
+                            break;
+                        case 'kmpTime':
+                            aVal = a.full_report?.performance?.find(p => p.code === 'KMP' || p.algorithm === 'KMP')?.execution_time_ms || 0;
+                            bVal = b.full_report?.performance?.find(p => p.code === 'KMP' || p.algorithm === 'KMP')?.execution_time_ms || 0;
+                            break;
+                        default:
+                            return 0;
+                    }
+                    
+                    return currentSortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                });
+                
+                // Re-render table with sorted results
+                renderTableOnly(sortedResults);
+            };
+
+            function updateSortIcons(activeColumn, direction) {
+                // Reset all icons
+                document.querySelectorAll('[id^="sort-"]').forEach(icon => {
+                    icon.className = 'fas fa-sort ml-1 text-gray-500';
+                });
+                
+                // Set active icon
+                const activeIcon = document.getElementById(`sort-${activeColumn}`);
+                if (activeIcon) {
+                    activeIcon.className = `fas fa-sort-${direction === 'asc' ? 'up' : 'down'} ml-1 text-white`;
+                }
+            }
+
+            function renderTableOnly(results) {
+                resultsTableBody.innerHTML = results.map((result, index) => {
+                    const studentId = extractStudentId(result.cv_filename) || 'Unknown';
+                    const report = result.full_report;
+                    
+                    // Get algorithm times safely
+                    const bfTime = report?.performance?.find(p => p.code === 'BF' || p.algorithm === 'Brute Force')?.execution_time_ms || 0;
+                    const rkTime = report?.performance?.find(p => p.code === 'RK' || p.algorithm === 'Rabin-Karp')?.execution_time_ms || 0;
+                    const kmpTime = report?.performance?.find(p => p.code === 'KMP' || p.algorithm === 'KMP')?.execution_time_ms || 0;
+                    
+                    // Determine current rank based on position in sorted array
+                    const originalIndex = analysisResults.indexOf(result);
+                    const rank = originalIndex + 1;
+                    
+                    return `
+                        <tr class="hover:bg-gray-700 transition-colors duration-200">
+                            <td class="px-4 py-3 text-center border-r border-gray-600">
+                                <span class="bg-yellow-500 text-black font-bold px-3 py-1 rounded-full text-sm">
+                                    ${rank}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 border-r border-gray-600">
+                                <div class="font-medium text-white">${studentId}</div>
+                                <div class="text-xs text-gray-400 truncate">${result.cv_filename}</div>
+                            </td>
+                            <td class="px-4 py-3 border-r border-gray-600">
+                                <div class="flex items-center">
+                                    <div class="w-full bg-gray-600 rounded-full h-2 mr-3">
+                                        <div class="bg-gradient-to-r from-red-500 to-green-500 h-2 rounded-full" 
+                                             style="width: ${result.score}%"></div>
+                                    </div>
+                                    <span class="text-white font-bold text-lg min-w-12">${result.score}%</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-center border-r border-gray-600">
+                                <span class="text-green-400 font-bold text-lg">${result.matched_count || 0}</span>
+                                <div class="text-xs text-gray-400">of ${result.total_keywords || 0}</div>
+                            </td>
+                            <td class="px-4 py-3 text-center border-r border-gray-600">
+                                <span class="text-blue-400 font-mono text-sm">${bfTime.toFixed(2)}ms</span>
+                            </td>
+                            <td class="px-4 py-3 text-center border-r border-gray-600">
+                                <span class="text-purple-400 font-mono text-sm">${rkTime.toFixed(2)}ms</span>
+                            </td>
+                            <td class="px-4 py-3 text-center border-r border-gray-600">
+                                <span class="text-green-400 font-mono text-sm">${kmpTime.toFixed(2)}ms</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <button onclick="showDetailedReport('${result.cv_filename}')" 
+                                        class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded transition duration-200">
+                                    <i class="fas fa-eye mr-1"></i>Details
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // --- Results Rendering ---
+            function renderResults(results, analytics = null) {
+                placeholderContainer.classList.add('hidden');
+                resultsContainer.classList.remove('hidden');
+                
+                document.getElementById('results-count').textContent = results.length;
+                
+                // Store results for sorting functionality
+                currentResults = [...results]; // Deep copy to avoid mutation
+                
+                // Reset sorting state
+                currentSortColumn = null;
+                currentSortDirection = 'desc';
+                updateSortIcons('', '');
+                
+                // Store and render analytics automatically
+                if (analytics) {
+                    window.currentAnalytics = analytics;
+                    renderAnalytics(analytics);
+                } else if (results.length > 0) {
+                    // Calculate analytics from results if not provided
+                    const calculatedAnalytics = calculateAnalyticsFromResults(results);
+                    window.currentAnalytics = calculatedAnalytics;
+                    renderAnalytics(calculatedAnalytics);
+                }
+                
+                // Render the table using our new sorting-enabled function
+                renderTableOnly(results);
+            }
+
+            // --- Analytics Management ---
+            function calculateAnalyticsFromResults(results) {
+                // Calculate analytics from analysis results if not provided by backend
+                if (!results || results.length === 0) return null;
+                
+                const algorithms = {
+                    'Brute Force': { times: [], comparisons: [], matches: [] },
+                    'Rabin-Karp': { times: [], comparisons: [], matches: [] },
+                    'KMP': { times: [], comparisons: [], matches: [] }
+                };
+                
+                // Extract performance data from each result
+                for (const result of results) {
+                    if (!result.full_report || !result.full_report.performance) continue;
+                    
+                    for (const perf of result.full_report.performance) {
+                        const algoName = perf.algorithm;
+                        if (algorithms[algoName]) {
+                            algorithms[algoName].times.push(perf.execution_time_ms);
+                            algorithms[algoName].comparisons.push(perf.comparisons);
+                            algorithms[algoName].matches.push(perf.matches_found);
+                        }
+                    }
+                }
+                
+                // Calculate statistics
+                const analytics = {
+                    total_cvs_analyzed: results.length,
+                    algorithms: {}
+                };
+                
+                for (const [algoName, data] of Object.entries(algorithms)) {
+                    if (data.times.length > 0) {
+                        analytics.algorithms[algoName] = {
+                            execution_time: {
+                                total_ms: data.times.reduce((a, b) => a + b, 0),
+                                average_ms: data.times.reduce((a, b) => a + b, 0) / data.times.length,
+                                min_ms: Math.min(...data.times),
+                                max_ms: Math.max(...data.times)
+                            },
+                            comparisons: {
+                                total: data.comparisons.reduce((a, b) => a + b, 0),
+                                average: data.comparisons.reduce((a, b) => a + b, 0) / data.comparisons.length,
+                                min: Math.min(...data.comparisons),
+                                max: Math.max(...data.comparisons)
+                            },
+                            matches_found: {
+                                total: data.matches.reduce((a, b) => a + b, 0),
+                                average: data.matches.reduce((a, b) => a + b, 0) / data.matches.length,
+                                min: Math.min(...data.matches),
+                                max: Math.max(...data.matches)
+                            },
+                            files_processed: data.times.length
+                        };
+                    }
+                }
+                
+                // Add summary
+                if (Object.keys(analytics.algorithms).length > 0) {
+                    const algorithmEntries = Object.entries(analytics.algorithms);
+                    const fastest = algorithmEntries.reduce((a, b) => 
+                        a[1].execution_time.total_ms < b[1].execution_time.total_ms ? a : b
+                    );
+                    const mostEfficient = algorithmEntries.reduce((a, b) => 
+                        a[1].comparisons.total < b[1].comparisons.total ? a : b
+                    );
+                    
+                    analytics.summary = {
+                        fastest_overall: fastest[0],
+                        fastest_total_time: fastest[1].execution_time.total_ms,
+                        most_efficient_overall: mostEfficient[0],
+                        least_total_comparisons: mostEfficient[1].comparisons.total,
+                        total_execution_time_all_algorithms: algorithmEntries.reduce(
+                            (sum, [_, data]) => sum + data.execution_time.total_ms, 0
+                        ),
+                        total_comparisons_all_algorithms: algorithmEntries.reduce(
+                            (sum, [_, data]) => sum + data.comparisons.total, 0
+                        )
+                    };
+                }
+                
+                return analytics;
+            }
+            
+            function renderAnalytics(analytics) {
+                if (!analytics || !analytics.algorithms) {
+                    console.error('no analytics data');
+                    return;
+                }
+
+                // Populate algorithm-specific data
+                const algorithms = {
+                    'Brute Force': 'bf',
+                    'Rabin-Karp': 'rk',
+                    'KMP': 'kmp'
+                };
+
+                Object.entries(algorithms).forEach(([algoName, prefix]) => {
+                    const data = analytics.algorithms[algoName];
+                    if (data) {
+                        try {
+                            const totalTimeEl = document.getElementById(`${prefix}-total-time`);
+                            const avgTimeEl = document.getElementById(`${prefix}-avg-time`);
+                            const totalComparisonsEl = document.getElementById(`${prefix}-total-comparisons`);
+                            const avgComparisonsEl = document.getElementById(`${prefix}-avg-comparisons`);
+                            
+                            if (totalTimeEl) totalTimeEl.textContent = `${data.execution_time.total_ms.toFixed(2)} ms`;
+                            if (avgTimeEl) avgTimeEl.textContent = `${data.execution_time.average_ms.toFixed(2)} ms`;
+                            if (totalComparisonsEl) totalComparisonsEl.textContent = data.comparisons.total.toLocaleString();
+                            if (avgComparisonsEl) avgComparisonsEl.textContent = data.comparisons.average.toFixed(0);
+                        } catch (e) {
+                            console.error(`error updating ${algoName}:`, e);
+                        }
+                    }
+                });
+
+                // Render performance comparison charts
+                renderPerformanceCharts(analytics);
+
+                // Populate enhanced summary data
+                if (analytics.summary) {
+                    try {
+                        const fastestEl = document.getElementById('fastest-algo');
+                        const mostEfficientEl = document.getElementById('most-efficient-algo');
+                        const totalCvsEl = document.getElementById('total-cvs-analyzed');
+                        const totalTimeEl = document.getElementById('total-processing-time');
+                        
+                        if (fastestEl) fastestEl.textContent = analytics.summary.fastest_overall;
+                        if (mostEfficientEl) mostEfficientEl.textContent = analytics.summary.most_efficient_overall;
+                        if (totalCvsEl) totalCvsEl.textContent = analytics.total_cvs_analyzed;
+                        if (totalTimeEl) totalTimeEl.textContent = `${analytics.summary.total_execution_time_all_algorithms.toFixed(2)} ms`;
+                    } catch (e) {
+                        console.error('error updating summary:', e);
+                    }
+                }
+                
+                // Generate algorithm complexity analysis
+                renderComplexityAnalysis(analytics);
+            }
+
+            function renderPerformanceCharts(analytics) {
+                if (!analytics || !analytics.algorithms) return;
+
+                // Prepare data for charts
+                const algorithms = Object.keys(analytics.algorithms);
+                const timeData = algorithms.map(algo => analytics.algorithms[algo].execution_time.total_ms);
+                const comparisonData = algorithms.map(algo => analytics.algorithms[algo].comparisons.total);
+                
+                // Time Comparison Chart
+                const timeCtx = document.getElementById('time-chart');
+                if (timeCtx) {
+                    // Destroy existing chart if it exists
+                    if (window.timeChart) {
+                        window.timeChart.destroy();
+                    }
+                    
+                    window.timeChart = new Chart(timeCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: algorithms,
+                            datasets: [{
+                                label: 'Execution Time (ms)',
+                                data: timeData,
+                                backgroundColor: [
+                                    'rgba(239, 68, 68, 0.8)',   // Red for Brute Force
+                                    'rgba(34, 197, 94, 0.8)',   // Green for Rabin-Karp
+                                    'rgba(59, 130, 246, 0.8)'   // Blue for KMP
+                                ],
+                                borderColor: [
+                                    'rgb(239, 68, 68)',
+                                    'rgb(34, 197, 94)',
+                                    'rgb(59, 130, 246)'
+                                ],
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Time (ms)',
+                                        color: '#e5e7eb'
+                                    },
+                                    ticks: { color: '#9ca3af' },
+                                    grid: { color: '#374151' }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Algorithm',
+                                        color: '#e5e7eb'
+                                    },
+                                    ticks: { color: '#9ca3af' },
+                                    grid: { color: '#374151' }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false  // Remove misleading legend
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Execution Time Comparison',
+                                    color: '#f3f4f6',
+                                    font: { size: 14 }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Comparisons Chart
+                const compCtx = document.getElementById('comparisons-chart');
+                if (compCtx) {
+                    // Destroy existing chart if it exists
+                    if (window.comparisonsChart) {
+                        window.comparisonsChart.destroy();
+                    }
+                    
+                    window.comparisonsChart = new Chart(compCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: algorithms,
+                            datasets: [{
+                                label: 'Character Comparisons',
+                                data: comparisonData,
+                                backgroundColor: [
+                                    'rgba(239, 68, 68, 0.8)',
+                                    'rgba(34, 197, 94, 0.8)',
+                                    'rgba(59, 130, 246, 0.8)'
+                                ],
+                                borderColor: [
+                                    'rgb(239, 68, 68)',
+                                    'rgb(34, 197, 94)',
+                                    'rgb(59, 130, 246)'
+                                ],
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    type: 'logarithmic',
+                                    title: {
+                                        display: true,
+                                        text: 'Comparisons (log scale)',
+                                        color: '#e5e7eb'
+                                    },
+                                    ticks: {
+                                        color: '#9ca3af',
+                                        callback: function(value) {
+                                            // Better formatting for log scale
+                                            if (value >= 1000000) {
+                                                return (value / 1000000).toFixed(1) + 'M';
+                                            } else if (value >= 1000) {
+                                                return (value / 1000).toFixed(0) + 'K';
+                                            }
+                                            return value.toLocaleString();
+                                        }
+                                    },
+                                    grid: { color: '#374151' },
+                                    min: 1000,  // Start from 1K to better show the range
+                                    max: 10000000  // Cap at 10M to include all data
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Algorithm',
+                                        color: '#e5e7eb'
+                                    },
+                                    ticks: { color: '#9ca3af' },
+                                    grid: { color: '#374151' }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false  // Remove misleading legend
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Character Comparisons (Algorithmic Efficiency)',
+                                    color: '#f3f4f6',
+                                    font: { size: 14 }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            function renderComplexityAnalysis(analytics) {
+                // This function will add theoretical vs practical complexity analysis
+                if (!analytics || !analytics.algorithms) return;
+                
+                // Add complexity analysis section if it doesn't exist
+                let complexitySection = document.getElementById('complexity-analysis');
+                if (!complexitySection) {
+                    const summaryStats = document.getElementById('summary-stats');
+                    if (summaryStats) {
+                        const complexityHTML = `
+                            <div id="complexity-analysis" class="bg-gray-700 p-4 rounded-lg mt-6">
+                                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                                    <i class="fas fa-calculator mr-2 text-purple-400"></i>Algorithmic Complexity Analysis
+                                </h3>
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                    <div class="bg-gray-600 p-3 rounded">
+                                        <h4 class="font-semibold text-red-400 mb-2">Brute Force</h4>
+                                        <div class="text-sm space-y-1">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Time Complexity:</span>
+                                                <span class="text-white font-mono">O(n×m)</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Space Complexity:</span>
+                                                <span class="text-white font-mono">O(1)</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Best Case:</span>
+                                                <span class="text-white font-mono">Ω(n)</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Worst Case:</span>
+                                                <span class="text-white font-mono">O(n×m)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-600 p-3 rounded">
+                                        <h4 class="font-semibold text-green-400 mb-2">Rabin-Karp</h4>
+                                        <div class="text-sm space-y-1">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Time Complexity:</span>
+                                                <span class="text-white font-mono">O(n+m)</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Space Complexity:</span>
+                                                <span class="text-white font-mono">O(1)</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Best Case:</span>
+                                                <span class="text-white font-mono">Ω(n)</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Worst Case:</span>
+                                                <span class="text-white font-mono">O(n×m)*</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-600 p-3 rounded">
+                                        <h4 class="font-semibold text-blue-400 mb-2">KMP (Knuth-Morris-Pratt)</h4>
+                                        <div class="text-sm space-y-1">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Time Complexity:</span>
+                                                <span class="text-white font-mono">O(n+m)</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Space Complexity:</span>
+                                                <span class="text-white font-mono">O(m)</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Best Case:</span>
+                                                <span class="text-white font-mono">Ω(n)</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-300">Worst Case:</span>
+                                                <span class="text-white font-mono">O(n+m)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 p-3 bg-gray-600 rounded">
+                                    <h4 class="font-semibold text-yellow-400 mb-2">Performance Insights</h4>
+                                    <div class="text-sm text-gray-300 space-y-2" id="performance-insights">
+                                        <!-- Dynamic insights will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        summaryStats.insertAdjacentHTML('afterend', complexityHTML);
+                    }
+                }
+                
+                // Generate dynamic performance insights
+                generatePerformanceInsights(analytics);
+            }
+
+            function generatePerformanceInsights(analytics) {
+                const insightsEl = document.getElementById('performance-insights');
+                if (!insightsEl || !analytics.algorithms) return;
+                
+                const algorithms = analytics.algorithms;
+                const insights = [];
+                
+                // Extract performance data
+                const bruteForce = algorithms['Brute Force'];
+                const rabinKarp = algorithms['Rabin-Karp'];
+                const kmp = algorithms['KMP'];
+                
+                if (!bruteForce || !rabinKarp || !kmp) {
+                    insights.push('• Insufficient data for comprehensive analysis');
+                    insightsEl.innerHTML = insights.join('<br>');
+                    return;
+                }
+                
+                // Get actual values
+                const bfTime = bruteForce.execution_time.total_ms;
+                const rkTime = rabinKarp.execution_time.total_ms;
+                const kmpTime = kmp.execution_time.total_ms;
+                
+                const bfComparisons = bruteForce.comparisons.total;
+                const rkComparisons = rabinKarp.comparisons.total;
+                const kmpComparisons = kmp.comparisons.total;
+                
+                // Determine fastest algorithm for time
+                let fastestTime = Math.min(bfTime, rkTime, kmpTime);
+                let fastestAlgo = '';
+                if (fastestTime === bfTime) fastestAlgo = 'Brute Force';
+                else if (fastestTime === rkTime) fastestAlgo = 'Rabin-Karp';
+                else fastestAlgo = 'KMP';
+                
+                // Determine most efficient algorithm (fewest comparisons)
+                let leastComparisons = Math.min(bfComparisons, rkComparisons, kmpComparisons);
+                let mostEfficientAlgo = '';
+                if (leastComparisons === bfComparisons) mostEfficientAlgo = 'Brute Force';
+                else if (leastComparisons === rkComparisons) mostEfficientAlgo = 'Rabin-Karp';
+                else mostEfficientAlgo = 'KMP';
+                
+                // Generate time-based insights
+                if (fastestAlgo === 'Brute Force') {
+                    const bfVsRk = (rkTime / bfTime).toFixed(1);
+                    const bfVsKmp = (kmpTime / bfTime).toFixed(1);
+                    insights.push(`• Brute Force is surprisingly fastest (${bfTime.toFixed(1)}ms)`);
+                    insights.push(`• Rabin-Karp is ${bfVsRk}x slower (${rkTime.toFixed(1)}ms) - hash overhead impacts performance`);
+                    insights.push(`• KMP is ${bfVsKmp}x slower (${kmpTime.toFixed(1)}ms) - preprocessing overhead for small patterns`);
+                } else if (fastestAlgo === 'KMP') {
+                    const kmpVsBf = (bfTime / kmpTime).toFixed(1);
+                    const kmpVsRk = (rkTime / kmpTime).toFixed(1);
+                    insights.push(`• KMP is fastest (${kmpTime.toFixed(1)}ms) - optimal for this dataset`);
+                    insights.push(`• KMP is ${kmpVsBf}x faster than Brute Force`);
+                    insights.push(`• KMP is ${kmpVsRk}x faster than Rabin-Karp`);
+                } else if (fastestAlgo === 'Rabin-Karp') {
+                    const rkVsBf = (bfTime / rkTime).toFixed(1);
+                    const rkVsKmp = (kmpTime / rkTime).toFixed(1);
+                    insights.push(`• Rabin-Karp is fastest (${rkTime.toFixed(1)}ms) - efficient hashing`);
+                    insights.push(`• Rabin-Karp is ${rkVsBf}x faster than Brute Force`);
+                    insights.push(`• Rabin-Karp is ${rkVsKmp}x faster than KMP`);
+                }
+                
+                // Generate comparison-based insights
+                const rkReduction = ((bfComparisons - rkComparisons) / bfComparisons * 100).toFixed(0);
+                const kmpReduction = ((bfComparisons - kmpComparisons) / bfComparisons * 100).toFixed(0);
+                
+                insights.push(`• Rabin-Karp reduces comparisons by ${rkReduction}% (${rkComparisons.toLocaleString()} vs ${bfComparisons.toLocaleString()})`);
+                
+                if (kmpComparisons < bfComparisons) {
+                    insights.push(`• KMP reduces comparisons by ${kmpReduction}% (${kmpComparisons.toLocaleString()} vs ${bfComparisons.toLocaleString()})`);
+                } else {
+                    const kmpIncrease = ((kmpComparisons - bfComparisons) / bfComparisons * 100).toFixed(0);
+                    insights.push(`• KMP uses ${kmpIncrease}% more comparisons due to pattern preprocessing overhead`);
+                }
+                
+                // Algorithm characteristics explanation
+                if (fastestAlgo === 'Brute Force') {
+                    insights.push(`• For short patterns and small datasets, Brute Force's simplicity outperforms complex algorithms`);
+                }
+                
+                if (mostEfficientAlgo === 'Rabin-Karp') {
+                    insights.push(`• Rabin-Karp's hash-based approach minimizes character-by-character comparisons`);
+                }
+                
+                // Overall recommendation
+                if (fastestAlgo === mostEfficientAlgo) {
+                    insights.push(`• <strong>${fastestAlgo}</strong> is optimal for this dataset (fastest execution + fewest comparisons)`);
+                } else {
+                    insights.push(`• Trade-off detected: <strong>${fastestAlgo}</strong> fastest execution, <strong>${mostEfficientAlgo}</strong> most algorithmic efficiency`);
+                }
+                
+                // Dataset characteristics
+                const totalCVs = analytics.total_cvs_analyzed || 0;
+                const avgTextSize = Math.round((bfComparisons + rkComparisons + kmpComparisons) / 3 / totalCVs);
+                insights.push(`• Analysis on ${totalCVs} CVs with ~${avgTextSize.toLocaleString()} avg comparisons per document`);
+                
+                insightsEl.innerHTML = insights.join('<br>');
+            }
+
+            // Analytics toggle functionality
+            const toggleAnalyticsBtn = document.getElementById('toggle-analytics-btn');
+            const hideAnalyticsBtn = document.getElementById('hide-analytics-btn');
+            const analyticsContainer = document.getElementById('analytics-container');
+
+            // WORKING Analytics function
+            window.toggleAnalyticsSimple = function() {
+                console.log('analytics button clicked');
+                
+                const analyticsContainer = document.getElementById('analytics-container');
+                const toggleBtn = document.getElementById('toggle-analytics-btn');
+                
+                if (!analyticsContainer) {
+                    console.error('❌ Analytics container missing');
+                    return;
+                }
+                
+                // Toggle visibility
+                const isHidden = analyticsContainer.classList.contains('hidden');
+                console.log('� Analytics currently hidden:', isHidden);
+                
+                if (isHidden) {
+                    // Show analytics
+                    console.log('showing analytics');
+                    
+                    // Use backend analytics if available, otherwise calculate
+                    let analytics = window.currentAnalytics;
+                    if (!analytics && analysisResults.length > 0) {
+                        console.log('calculating analytics...');
+                        analytics = calculateAnalyticsFromResults(analysisResults);
+                        window.currentAnalytics = analytics;
+                    }
+                    
+                    if (analytics && analytics.algorithms) {
+                        renderAnalytics(analytics);
+                        analyticsContainer.classList.remove('hidden');
+                        toggleBtn.innerHTML = '<i class="fas fa-chart-bar mr-1"></i>Hide Analytics';
+                        console.log('analytics displayed');
+                    } else {
+                        console.error('❌ No valid analytics data');
+                    }
+                } else {
+                    // Hide analytics
+                    console.log('� Hiding analytics...');
+                    analyticsContainer.classList.add('hidden');
+                    toggleBtn.innerHTML = '<i class="fas fa-chart-bar mr-1"></i>Show Analytics';
+                }
+            };
+
+            // Attach event listeners
+            if (toggleAnalyticsBtn) {
+                toggleAnalyticsBtn.addEventListener('click', window.toggleAnalytics);
+            }
+
+            // Hide analytics button removed - analytics always visible
+            if (hideAnalyticsBtn) {
+                hideAnalyticsBtn.style.display = 'none';
+            }
+            
+            // Update analytics button when analytics are available
+            function updateAnalyticsButton() {
+                if (!toggleAnalyticsBtn) return;
+                
+                if ((window.currentAnalytics && window.currentAnalytics.algorithms) || analysisResults.length > 0) {
+                    toggleAnalyticsBtn.classList.remove('opacity-50');
+                    toggleAnalyticsBtn.disabled = false;
+                } else {
+                    toggleAnalyticsBtn.classList.add('opacity-50');
+                    toggleAnalyticsBtn.disabled = true;
+                }
+            }
+
+            // modal functions
+            window.showDetailedReport = function(filename) {
+                const result = analysisResults.find(r => r.cv_filename === filename);
+                if (!result || !result.full_report) {
+                    showError('Report not found for this CV.');
+                    return;
+                }
+                
+                const report = result.full_report;
+                currentModalFilename = filename;  // Store for view CV functionality
+                
+                // update modal content
+                modalCvFilename.textContent = filename;
+                modalJdTitle.textContent = currentJobDescription?.title || 'Unknown';
+                modalScore.textContent = `${result.score}%`;
+                document.getElementById('modal-fastest-algo').textContent = 
+                    report.performance_summary?.fastest_algorithm || 'N/A';
+                
+                // create performance table
+                modalPerformanceTable.innerHTML = report.performance.map((p, index) => {
+                    // calculate metrics
+                    const avgTimePerMatch = p.matches_found > 0 ? (p.execution_time_ms / p.matches_found).toFixed(3) : 'N/A';
+                    const comparisonsPerMatch = p.matches_found > 0 ? Math.round(p.comparisons / p.matches_found) : 'N/A';
+                    
+                    // algorithm info
+                    let algoInsight = '';
+                    let performanceClass = 'text-gray-400';
+                    
+                    switch(p.algorithm) {
+                        case 'Brute Force':
+                            algoInsight = 'O(n×m) - Simple but inefficient for large texts';
+                            performanceClass = 'text-red-400';
+                            break;
+                        case 'Rabin-Karp':
+                            algoInsight = 'O(n+m) avg - Hash-based with collision risk';
+                            performanceClass = 'text-yellow-400';
+                            break;
+                        case 'KMP':
+                            algoInsight = 'O(n+m) - Optimal with preprocessing overhead';
+                            performanceClass = 'text-green-400';
+                            break;
+                    }
+                    
+                    return `
+                        <tr class="hover:bg-gray-600 border-b border-gray-700">
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-white">${p.algorithm}</div>
+                                <div class="text-xs ${performanceClass}">${algoInsight}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-blue-400 font-mono">${p.execution_time_ms.toFixed(2)}ms</div>
+                                <div class="text-xs text-gray-400">${avgTimePerMatch}ms/match</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-purple-400 font-mono">${p.comparisons.toLocaleString()}</div>
+                                <div class="text-xs text-gray-400">${comparisonsPerMatch}/match</div>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="text-green-400 font-semibold text-lg">${p.matches_found}</div>
+                                ${index === 0 ? '<div class="text-xs text-green-300">✓ All algorithms found same matches</div>' : ''}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                // add comparison insights
+                if (report.performance.length >= 2) {
+                    const insights = generateModalInsights(report.performance);
+                    modalPerformanceTable.innerHTML += `
+                        <tr class="bg-gray-700">
+                            <td colspan="4" class="px-6 py-4">
+                                <h4 class="font-semibold text-white mb-2 flex items-center">
+                                    <i class="fas fa-lightbulb mr-2 text-yellow-400"></i>Performance Analysis
+                                </h4>
+                                <div class="text-sm text-gray-300 space-y-1">
+                                    ${insights.join('<br>')}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                // keywords display
+                modalMatchedCount.textContent = report.matched_count;
+                modalMatchedList.innerHTML = report.matched_keywords.length > 0 
+                    ? report.matched_keywords.map(kw => {
+                        // categorize keywords
+                        let category = 'general';
+                        let categoryColor = 'bg-green-600';
+                        
+                        if (['python', 'java', 'javascript', 'c++', 'r'].includes(kw.toLowerCase())) {
+                            category = 'Programming';
+                            categoryColor = 'bg-blue-600';
+                        } else if (['machine learning', 'deep learning', 'ai', 'nlp'].includes(kw.toLowerCase())) {
+                            category = 'AI/ML';
+                            categoryColor = 'bg-purple-600';
+                        } else if (['sql', 'mongodb', 'mysql', 'postgresql'].includes(kw.toLowerCase())) {
+                            category = 'Database';
+                            categoryColor = 'bg-indigo-600';
+                        } else if (['react', 'node.js', 'django', 'flask'].includes(kw.toLowerCase())) {
+                            category = 'Framework';
+                            categoryColor = 'bg-emerald-600';
+                        }
+                        
+                        return `<span class="inline-block ${categoryColor} text-white text-xs px-2 py-1 rounded mr-1 mb-1" title="${category}">${kw}</span>`;
+                    }).join('')
+                    : '<p class="text-gray-400">No keywords matched.</p>';
+                    
+                modalMissingCount.textContent = report.missing_keywords.length;
+                modalMissingList.innerHTML = report.missing_keywords.length > 0 
+                    ? report.missing_keywords.map(kw => 
+                        `<span class="inline-block bg-red-600 text-white text-xs px-2 py-1 rounded mr-1 mb-1">${kw}</span>`
+                    ).join('')
+                    : '<p class="text-gray-400 text-center py-4"><i class="fas fa-check-circle text-green-400 mr-2"></i>Perfect match! All keywords found!</p>';
+                
+                // show modal
+                modalBackdrop.classList.remove('hidden');
+                setTimeout(() => {
+                    modalBackdrop.classList.remove('opacity-0');
+                    modalContent.classList.remove('scale-95', 'opacity-0');
+                }, 10);
+            }
+
+            function generateModalInsights(performance) {
+                const insights = [];
+                
+                // find best algorithms
+                let fastestAlgo = performance[0];
+                let mostEfficientAlgo = performance[0];
+                
+                for (let p of performance) {
+                    if (p.execution_time_ms < fastestAlgo.execution_time_ms) {
+                        fastestAlgo = p;
+                    }
+                    if (p.comparisons < mostEfficientAlgo.comparisons) {
+                        mostEfficientAlgo = p;
+                    }
+                }
+                
+                // compare algorithms
+                const bruteForce = performance.find(p => p.algorithm === 'Brute Force');
+                const rabinKarp = performance.find(p => p.algorithm === 'Rabin-Karp');
+                const kmp = performance.find(p => p.algorithm === 'KMP');
+                
+                if (bruteForce && kmp) {
+                    const speedup = (bruteForce.execution_time_ms / kmp.execution_time_ms).toFixed(1);
+                    const efficiencyGain = (bruteForce.comparisons / kmp.comparisons).toFixed(0);
+                    insights.push(`• KMP is ${speedup}x faster and ${efficiencyGain}x more efficient than Brute Force`);
+                }
+                
+                if (bruteForce && rabinKarp) {
+                    const comparisonReduction = ((1 - rabinKarp.comparisons / bruteForce.comparisons) * 100).toFixed(0);
+                    insights.push(`• Rabin-Karp reduces comparisons by ${comparisonReduction}% compared to Brute Force`);
+                }
+                
+                // Algorithm recommendation for this specific CV
+                if (fastestAlgo.algorithm === mostEfficientAlgo.algorithm) {
+                    insights.push(`• ${fastestAlgo.algorithm} is optimal for this CV (fastest + most efficient)`);
+                } else {
+                    insights.push(`• ${fastestAlgo.algorithm} fastest (${fastestAlgo.execution_time_ms.toFixed(2)}ms), ${mostEfficientAlgo.algorithm} most efficient (${mostEfficientAlgo.comparisons.toLocaleString()} comparisons)`);
+                }
+                
+                // text complexity check
+                const avgComparisons = performance.reduce((sum, p) => sum + p.comparisons, 0) / performance.length;
+                if (avgComparisons > 100000) {
+                    insights.push(`• High text complexity detected - ${avgComparisons.toLocaleString()} avg comparisons suggest dense content`);
+                } else if (avgComparisons < 10000) {
+                    insights.push(`• Low text complexity - ${avgComparisons.toLocaleString()} avg comparisons indicate sparse keyword distribution`);
+                }
+                
+                return insights;
+            }
+
+            function hideModal() {
+                modalBackdrop.classList.add('opacity-0');
+                modalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    modalBackdrop.classList.add('hidden');
+                }, 300);
+            }
+            
+            modalCloseBtn.addEventListener('click', hideModal);
+            modalBackdrop.addEventListener('click', (e) => {
+                if (e.target === modalBackdrop) hideModal();
+            });
+            
+            // view cv button
+            viewCvBtn.addEventListener('click', () => {
+                if (currentModalFilename) {
+                    const cvUrl = `${API_BASE_URL}/api/cv/${encodeURIComponent(currentModalFilename)}`;
+                    window.open(cvUrl, '_blank');
+                } else {
+                    showError('No CV file selected for viewing.');
+                }
+            });
+
+            // initialize everything
+            fetchJDs();
+            renderCVList();
+            updateAnalysisButtons();
+            updateStats();
+            updateAnalyticsButton();
+        });
+    </script>
+
+</body>
+</html>

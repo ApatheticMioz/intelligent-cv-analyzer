@@ -1,0 +1,3 @@
+Job Title: Data Scientist
+
+python, r, sql, data analysis, pandas, numpy, matplotlib, seaborn, scikit-learn, data mining, power bi, tableau, statistics, regression, classification, clustering

@@ -1,0 +1,4 @@
+Job Title: AI/ML Engineer
+
+Required Skills and Technologies:
+python, machine learning, deep learning, tensorflow, pytorch, scikit-learn, pandas, numpy, opencv, computer vision, nlp, langchain, fastapi, docker, git
