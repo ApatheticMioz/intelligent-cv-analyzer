@@ -56,3 +56,13 @@ node_modules/
 # Frontend build artifacts
 *.map
 *.cache
+
+# Compiled binaries
+*.exe
+*.o
+*.out
+*.dll
+*.dylib
+
+# Archives
+*.rar
