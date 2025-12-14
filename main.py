@@ -310,6 +310,8 @@ def rabin_karp_search(text: str, pattern: str, metrics: PerformanceMetrics) -> b
     n, m = len(text), len(pattern)
     if m == 0: return True
     if m > n: return False
+    # PRIME: A prime number used for modulo to reduce hash collisions
+    # D: Base for the polynomial hash (256 = number of ASCII characters)
     PRIME, D = 101, 256
     pattern_hash, text_hash, h = 0, 0, 1
     for i in range(m - 1): h = (h * D) % PRIME
